@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Awesome To-Do App</title>
+    <style>
+        /* Basic Reset & Box-sizing */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Define CSS Variables for easy theme management */
+        :root {
+            --primary-color: #4CAF50; /* Green */
+            --secondary-color: #FFC107; /* Amber, not heavily used but available */
+            --background-color: #f4f7f6;
+            --card-background: #ffffff;
+            --text-color: #333;
+            --light-text-color: #666;
+            --border-color: #e0e0e0;
+            --shadow-color: rgba(0, 0, 0, 0.08);
+            --completed-text-color: #999;
+            --delete-red: #d32f2f;
+            --edit-blue: #1976d2;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--background-color);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* Main container for the entire application */
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        /* Header Styling */
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 30px;
+            font-size: 2.8em;
+            font-weight: 700;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.05);
+        }
+
+        /* Base styles for all input fields and buttons */
+        input[type="text"],
+        input[type="date"],
+        input[type="time"],
+        button {
+            padding: 12px 18px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1em;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        /* Focus styles for inputs */
+        input[type="text"]:focus,
+        input[type="date"]:focus,
+        input[type="time"]:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2); /* Light green shadow */
+        }
+
+        /* Button base styles */
+        button {
+            cursor: pointer;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            font-weight: 600;
+            box-shadow: 0 2px 5px var(--shadow-color);
+        }
+
+        /* Button hover effects */
+        button:hover {
+            background-color: #43a047; /* Darker green */
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 3px var(--shadow-color);
+        }
+
+        /* Section for adding new lists */
+        .add-list-section {
+            background-color: var(--card-background);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px var(--shadow-color);
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap; /* Allows items to wrap on smaller screens */
+            align-items: center;
+        }
+
+        .add-list-section input {
+            flex-grow: 1; /* Input takes available space */
+            min-width: 200px;
+        }
+
+        /* Container for all individual to-do lists */
+        .lists-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); /* Responsive grid layout */
+            gap: 25px;
+        }
+
+        /* Styling for an individual to-do list card */
+        .todo-list {
+            background-color: var(--card-background);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px var(--shadow-color);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .list-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .list-header h2 {
+            font-size: 1.8em;
+            color: var(--text-color);
+            flex-grow: 1;
+            margin-right: 10px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis; /* Truncate long list names */
+            padding: 2px 0; /* To match input padding for visual consistency */
+        }
+        
+        /* Style for when a list name is being edited */
+        .list-header h2[contenteditable="true"] {
+            outline: 2px solid var(--primary-color);
+            border-radius: 4px;
+            padding: 2px 5px;
+        }
+
+        .list-header .list-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* Styling for the small circular action buttons in list headers and tasks */
+        .list-header button,
+        .task-actions button {
+            background-color: transparent; /* Default transparent */
+            color: var(--light-text-color);
+            padding: 8px;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s ease, color 0.2s ease;
+            box-shadow: none; /* Override default button shadow */
+        }
+        .list-header button:hover,
+        .task-actions button:hover {
+            background-color: var(--border-color); /* Light grey on hover */
+            color: var(--text-color);
+            transform: none; /* No vertical transform */
+            box-shadow: none;
+        }
+        /* Specific colors for delete buttons */
+        .list-header button.delete-list-btn,
+        .task-actions button.delete-task-btn {
+            color: var(--delete-red);
+        }
+        .list-header button.delete-list-btn:hover,
+        .task-actions button.delete-task-btn:hover {
+            background-color: #ffebee; /* Lighter red on hover */
+            color: #b71c1c;
+        }
+        /* Specific colors for edit buttons */
+        .list-header button.edit-list-name-btn,
+        .task-actions button.edit-task-btn {
+            color: var(--edit-blue);
+        }
+        .list-header button.edit-list-name-btn:hover,
+        .task-actions button.edit-task-btn:hover {
+            background-color: #e3f2fd; /* Light blue on hover */
+            color: #0d47a1;
+        }
+        /* Style for the save button when editing */
+        .task-actions button.save-task-btn,
+        .list-header button.save-list-name-btn {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        .task-actions button.save-task-btn:hover,
+        .list-header button.save-list-name-btn:hover {
+            background-color: #43a047;
+            color: white;
+        }
+
+
+        /* Add Task Form Styling */
+        .add-task-form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .add-task-form .input-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .add-task-form input[type="text"] {
+            flex-grow: 1;
+        }
+        .add-task-form input[type="date"],
+        .add-task-form input[type="time"] {
+            width: auto;
+            min-width: 120px;
+            flex: 1; /* Distribute space evenly */
+        }
+
+        /* Task List Styling */
+        .task-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* Individual task item styling */
+        .task-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--background-color);
+            transition: background-color 0.3s ease;
+            gap: 10px;
+            flex-wrap: wrap; /* Allow wrapping of elements inside task item */
+        }
+
+        /* Style for completed tasks */
+        .task-item.completed {
+            background-color: #e8f5e9; /* Light green */
+            border-color: #c8e6c9;
+        }
+
+        /* Custom checkbox styling */
+        .task-item input[type="checkbox"] {
+            appearance: none; /* Hide default checkbox */
+            -webkit-appearance: none;
+            width: 22px;
+            height: 22px;
+            border: 2px solid var(--primary-color);
+            border-radius: 5px;
+            cursor: pointer;
+            position: relative;
+            flex-shrink: 0; /* Prevent checkbox from shrinking */
+            outline: none;
+        }
+
+        .task-item input[type="checkbox"]:checked {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .task-item input[type="checkbox"]:checked::after {
+            content: '✔'; /* Checkmark symbol */
+            color: white;
+            font-size: 14px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .task-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 150px; /* Ensure content doesn't shrink too much */
+        }
+
+        .task-text {
+            font-size: 1.1em;
+            font-weight: 500;
+            word-break: break-word; /* Prevents long words from overflowing */
+        }
+
+        /* Strikethrough for completed tasks */
+        .task-item.completed .task-text {
+            text-decoration: line-through;
+            color: var(--completed-text-color);
+        }
+
+        .task-date-time {
+            font-size: 0.85em;
+            color: var(--light-text-color);
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .task-item.completed .task-date-time {
+            color: var(--completed-text-color);
+        }
+
+        .task-date-time svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor; /* Inherit color from parent */
+            vertical-align: middle;
+        }
+
+        .task-actions {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+            margin-left: auto; /* Pushes buttons to the right */
+        }
+
+        /* Editing State for Task Item */
+        .task-item.editing .task-text,
+        .task-item.editing .task-date-time {
+            display: none; /* Hide static text/date when editing */
+        }
+        .task-item.editing .task-content {
+            flex-direction: row; /* Arrange inputs horizontally */
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .task-item.editing .task-content input {
+            flex-grow: 1;
+            min-width: 100px;
+            display: block !important; /* Override inline style set by JS */
+        }
+        .task-item.editing .task-content input[type="date"],
+        .task-item.editing .task-content input[type="time"] {
+            width: auto;
+            min-width: 120px;
+            flex: 1;
+        }
+
+        /* Message for empty lists */
+        .empty-list-message {
+            text-align: center;
+            color: var(--light-text-color);
+            font-style: italic;
+            padding: 15px;
+            border: 1px dashed var(--border-color);
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.2em;
+            }
+            .add-list-section {
+                flex-direction: column; /* Stack input and button vertically */
+                gap: 10px;
+            }
+            .add-list-section input,
+            .add-list-section button {
+                width: 100%; /* Full width for input and button */
+            }
+            .lists-container {
+                grid-template-columns: 1fr; /* Single column on small screens */
+            }
+            .task-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .task-content {
+                width: 100%;
+                margin-left: 0;
+            }
+            .task-actions {
+                width: 100%;
+                justify-content: flex-end; /* Push buttons to the right */
+                margin-top: 10px;
+            }
+            /* Adjust editing task inputs for smaller screens */
+            .task-item.editing .task-content {
+                flex-direction: column;
+            }
+            .task-item.editing .task-content input {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 15px;
+            }
+            h1 {
+                font-size: 1.8em;
+            }
+            .add-list-section, .todo-list {
+                padding: 15px;
+            }
+            .task-item {
+                padding: 10px;
+            }
+            input[type="text"],
+            input[type="date"],
+            input[type="time"],
+            button {
+                padding: 10px 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>My Awesome To-Do App</h1>
+
+        <!-- Section for adding new lists -->
+        <section class="add-list-section">
+            <input type="text" id="newListInput" placeholder="New list name" aria-label="New list name">
+            <button id="addListBtn">Add New List</button>
+        </section>
+
+        <!-- Container where all individual to-do lists will be rendered by JavaScript -->
+        <div class="lists-container" id="listsContainer">
+            <!-- Example of a list structure (dynamically generated by JS)
+            <div class="todo-list" data-list-id="list1">
+                <div class="list-header">
+                    <h2 contenteditable="false" data-list-id="list1" tabindex="0">Groceries</h2>
+                    <div class="list-actions">
+                         <button class="edit-list-name-btn" aria-label="Edit list name">...</button>
+                         <button class="delete-list-btn" aria-label="Delete list">...</button>
+                    </div>
+                </div>
+
+                <div class="add-task-form">
+                    <div class="input-group">
+                        <input type="text" class="new-task-input" placeholder="Add new task" aria-label="New task text for Groceries">
+                        <input type="date" class="new-task-date" aria-label="Due date for new task">
+                        <input type="time" class="new-task-time" aria-label="Due time for new task">
+                    </div>
+                    <button class="add-task-btn">Add Task</button>
+                </div>
+
+                <ul class="task-list">
+                    <li class="task-item completed" data-task-id="task1">
+                        <input type="checkbox" checked aria-label="Mark task 'Buy milk' as completed">
+                        <div class="task-content">
+                            <span class="task-text">Buy milk</span>
+                            <div class="task-date-time">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm.9 15h-1.8V7h3.6v1.8h-1.8v8.2z"/></svg>
+                                Nov 20, 2023 at 10:00 AM
+                            </div>
+                            <input type="text" class="edit-task-input" value="Buy milk" style="display: none;">
+                            <input type="date" class="edit-task-date" value="2023-11-20" style="display: none;">
+                            <input type="time" class="edit-task-time" value="10:00" style="display: none;">
+                        </div>
+                        <div class="task-actions">
+                            <button class="edit-task-btn" aria-label="Edit task">...</button>
+                            <button class="delete-task-btn" aria-label="Delete task">...</button>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+            -->
+        </div>
+    </div>
+
+    <script>
+        // --- Utility Functions ---
+
+        /**
+         * Generates a unique ID for lists and tasks using timestamp and random string.
+         * @returns {string} A unique alphanumeric ID.
+         */
+        const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
+
+        /**
+         * Formats a date string (YYYY-MM-DD) and time string (HH:MM) into a readable locale-specific format.
+         * @param {string} dateStr - Date in YYYY-MM-DD format.
+         * @param {string} timeStr - Time in HH:MM format.
+         * @returns {string} Formatted date and time string (e.g., "Nov 20, 2023 at 10:00 AM"), or an empty string if no date/time.
+         */
+        const formatDateTime = (dateStr, timeStr) => {
+            let parts = [];
+            let dateObj;
+
+            // Attempt to parse date string
+            if (dateStr) {
+                try {
+                    // Append T00:00:00 to avoid timezone issues when only date is provided
+                    dateObj = new Date(dateStr + 'T00:00:00');
+                    if (!isNaN(dateObj.getTime())) { // Check for valid date
+                        parts.push(dateObj.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }));
+                    } else {
+                        console.warn("Invalid date string encountered:", dateStr);
+                        parts.push(dateStr); // Fallback to raw string if date is invalid
+                    }
+                } catch (e) {
+                    console.error("Error parsing date string:", dateStr, e);
+                    parts.push(dateStr);
+                }
+            }
+
+            // Attempt to parse time string
+            if (timeStr) {
+                try {
+                    const [hours, minutes] = timeStr.split(':').map(Number);
+                    // Create a dummy Date object to use toLocaleTimeString
+                    const time = new Date();
+                    time.setHours(hours, minutes, 0, 0);
+                    if (!isNaN(time.getTime())) { // Check for valid time
+                        parts.push(time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }));
+                    } else {
+                        console.warn("Invalid time string encountered:", timeStr);
+                        parts.push(timeStr); // Fallback to raw string if time is invalid
+                    }
+                } catch (e) {
+                    console.error("Error parsing time string:", timeStr, e);
+                    parts.push(timeStr);
+                }
+            }
+            return parts.join(' at ');
+        };
+
+        // --- Data Storage and Management ---
+
+        // Array to hold all lists and their tasks
+        let todoData = []; 
+
+        // Local Storage Key
+        const STORAGE_KEY = 'myAwesomeTodoApp';
+
+        /**
+         * Loads todo data from local storage.
+         */
+        const loadTodoData = () => {
+            const storedData = localStorage.getItem(STORAGE_KEY);
+            if (storedData) {
+                todoData = JSON.parse(storedData);
+            } else {
+                todoData = []; // Initialize if no data found
+            }
+            renderLists(); // Render UI after loading data
+        };
+
+        /**
+         * Saves current todo data to local storage.
+         */
+        const saveTodoData = () => {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(todoData));
+        };
+
+        // --- DOM Elements ---
+        const listsContainer = document.getElementById('listsContainer');
+        const newListInput = document.getElementById('newListInput');
+        const addListBtn = document.getElementById('addListBtn');
+
+        // --- Render Functions ---
+
+        /**
+         * Renders a single task item as an HTML string.
+         * @param {string} listId - The ID of the parent list.
+         * @param {object} task - The task object containing id, text, completed, dueDate, dueTime.
+         * @returns {string} HTML string for the task item.
+         */
+        const renderTask = (listId, task) => {
+            const formattedDateTime = formatDateTime(task.dueDate, task.dueTime);
+            const isCompleted = task.completed ? 'checked' : '';
+            const completedClass = task.completed ? 'completed' : '';
+
+            return `
+                <li class="task-item ${completedClass}" data-task-id="${task.id}">
+                    <input type="checkbox" ${isCompleted} aria-label="Mark task '${task.text}' as completed">
+                    <div class="task-content">
+                        <span class="task-text">${task.text}</span>
+                        ${formattedDateTime ? `<div class="task-date-time">
+                            <svg xmlns="http://www.w3.org/2000/svg" height="16" viewBox="0 0 24 24" width="16" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm.9 15h-1.8V7h3.6v1.8h-1.8v8.2z"/></svg>
+                            ${formattedDateTime}
+                        </div>` : ''}
+                        <!-- Inputs for editing tasks, initially hidden -->
+                        <input type="text" class="edit-task-input" value="${task.text}" style="display: none;" aria-label="Edit task text">
+                        <input type="date" class="edit-task-date" value="${task.dueDate}" style="display: none;" aria-label="Edit task due date">
+                        <input type="time" class="edit-task-time" value="${task.dueTime}" style="display: none;" aria-label="Edit task due time">
+                    </div>
+                    <div class="task-actions">
+                        <button class="edit-task-btn" aria-label="Edit task">
+                            <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                        </button>
+                        <button class="delete-task-btn" aria-label="Delete task">
+                            <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5L13.5 3h-3L9.5 4H5v2h14V4z"/></svg>
+                        </button>
+                    </div>
+                </li>
+            `;
+        };
+
+        /**
+         * Renders a single to-do list, including its tasks, as an HTML string.
+         * @param {object} list - The list object containing id, name, and tasks array.
+         * @returns {string} HTML string for the list.
+         */
+        const renderList = (list) => {
+            // Map tasks to their HTML strings, or display an empty message
+            const tasksHtml = list.tasks.length > 0
+                ? list.tasks.map(task => renderTask(list.id, task)).join('')
+                : '<p class="empty-list-message">No tasks yet. Add one above!</p>';
+
+            return `
+                <div class="todo-list" data-list-id="${list.id}">
+                    <div class="list-header">
+                        <!-- List name is contenteditable for in-place editing -->
+                        <h2 contenteditable="false" data-list-id="${list.id}" tabindex="0">${list.name}</h2>
+                        <div class="list-actions">
+                             <button class="edit-list-name-btn" aria-label="Edit list name">
+                                <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                             </button>
+                             <button class="delete-list-btn" aria-label="Delete list">
+                                 <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5L13.5 3h-3L9.5 4H5v2h14V4z"/></svg>
+                             </button>
+                        </div>
+                    </div>
+
+                    <div class="add-task-form">
+                        <div class="input-group">
+                            <input type="text" class="new-task-input" placeholder="Add new task" aria-label="New task text for ${list.name}">
+                            <input type="date" class="new-task-date" aria-label="Due date for new task">
+                            <input type="time" class="new-task-time" aria-label="Due time for new task">
+                        </div>
+                        <button class="add-task-btn">Add Task</button>
+                    </div>
+
+                    <ul class="task-list">
+                        ${tasksHtml}
+                    </ul>
+                </div>
+            `;
+        };
+
+        /**
+         * Renders all lists in the `todoData` array to the DOM.
+         * This function is called whenever the `todoData` changes.
+         */
+        const renderLists = () => {
+            listsContainer.innerHTML = todoData.map(renderList).join('');
+            attachEventListeners(); // Re-attach listeners after re-rendering dynamic content
+            saveTodoData(); // Save current state to local storage
+        };
+
+        // --- Core Application Logic (CRUD operations on data) ---
+
+        /**
+         * Finds a list object by its ID from `todoData`.
+         * @param {string} listId - The ID of the list to find.
+         * @returns {object|undefined} The list object, or undefined if not found.
+         */
+        const findList = (listId) => todoData.find(list => list.id === listId);
+
+        /**
+         * Finds a task object within a specific list by its ID.
+         * @param {string} listId - The ID of the parent list.
+         * @param {string} taskId - The ID of the task to find.
+         * @returns {object|undefined} The task object, or undefined if not found.
+         */
+        const findTask = (listId, taskId) => {
+            const list = findList(listId);
+            return list ? list.tasks.find(task => task.id === taskId) : undefined;
+        };
+
+        /**
+         * Adds a new list to `todoData`.
+         * @param {string} listName - The name of the new list.
+         */
+        const addList = (listName) => {
+            if (listName.trim() === '') return; // Prevent adding empty lists
+            todoData.push({
+                id: generateId(),
+                name: listName.trim(),
+                tasks: []
+            });
+            renderLists();
+            newListInput.value = ''; // Clear the input field
+        };
+
+        /**
+         * Deletes a list and all its tasks from `todoData`.
+         * @param {string} listId - The ID of the list to delete.
+         */
+        const deleteList = (listId) => {
+            if (confirm('Are you sure you want to delete this list and all its tasks?')) {
+                todoData = todoData.filter(list => list.id !== listId);
+                renderLists();
+            }
+        };
+
+        /**
+         * Edits the name of an existing list.
+         * @param {string} listId - The ID of the list.
+         * @param {string} newName - The new name for the list.
+         */
+        const editListName = (listId, newName) => {
+            const list = findList(listId);
+            if (list && newName.trim() !== '') { // Ensure list exists and new name is not empty
+                list.name = newName.trim();
+                renderLists();
+            }
+        };
+
+        /**
+         * Adds a new task to a specified list.
+         * @param {string} listId - The ID of the list to add the task to.
+         * @param {string} taskText - The text description of the task.
+         * @param {string} dueDate - The due date (YYYY-MM-DD format).
+         * @param {string} dueTime - The due time (HH:MM format).
+         */
+        const addTask = (listId, taskText, dueDate, dueTime) => {
+            if (taskText.trim() === '') return; // Prevent adding empty tasks
+            const list = findList(listId);
+            if (list) {
+                list.tasks.push({
+                    id: generateId(),
+                    text: taskText.trim(),
+                    completed: false,
+                    dueDate: dueDate,
+                    dueTime: dueTime
+                });
+                renderLists();
+            }
+        };
+
+        /**
+         * Deletes a task from a specific list.
+         * @param {string} listId - The ID of the parent list.
+         * @param {string} taskId - The ID of the task to delete.
+         */
+        const deleteTask = (listId, taskId) => {
+            const list = findList(listId);
+            if (list) {
+                list.tasks = list.tasks.filter(task => task.id !== taskId);
+                renderLists();
+            }
+        };
+
+        /**
+         * Toggles the completion status of a task.
+         * @param {string} listId - The ID of the parent list.
+         * @param {string} taskId - The ID of the task to toggle.
+         */
+        const toggleTaskCompletion = (listId, taskId) => {
+            const task = findTask(listId, taskId);
+            if (task) {
+                task.completed = !task.completed;
+                renderLists();
+            }
+        };
+
+        /**
+         * Edits an existing task's text, due date, and due time.
+         * @param {string} listId - The ID of the parent list.
+         * @param {string} taskId - The ID of the task to edit.
+         * @param {string} newText - The new task description.
+         * @param {string} newDueDate - The new due date.
+         * @param {string} newDueTime - The new due time.
+         */
+        const editTask = (listId, taskId, newText, newDueDate, newDueTime) => {
+            const task = findTask(listId, taskId);
+            if (task && newText.trim() !== '') {
+                task.text = newText.trim();
+                task.dueDate = newDueDate;
+                task.dueTime = newDueTime;
+                renderLists();
+            }
+        };
+
+        // --- Event Listener Attachment ---
+
+        /**
+         * Attaches all necessary event listeners to the DOM elements.
+         * Uses event delegation for dynamically created lists and tasks to optimize performance.
+         * This function is called after every render to ensure new elements have listeners.
+         */
+        const attachEventListeners = () => {
+            // Remove previous listeners to prevent duplicates (important when re-rendering)
+            listsContainer.removeEventListener('click', handleListsContainerClick);
+            listsContainer.removeEventListener('change', handleListsContainerChange);
+            listsContainer.removeEventListener('focusout', handleListsContainerFocusOut);
+            listsContainer.removeEventListener('keydown', handleListsContainerKeydown);
+
+            addListBtn.removeEventListener('click', handleAddList);
+            newListInput.removeEventListener('keydown', handleNewListInputKeydown);
+            
+            // Add new listeners
+            addListBtn.addEventListener('click', handleAddList);
+            newListInput.addEventListener('keydown', handleNewListInputKeydown);
+
+            // Event delegation for actions within listsContainer
+            listsContainer.addEventListener('click', handleListsContainerClick);
+            listsContainer.addEventListener('change', handleListsContainerChange);
+            listsContainer.addEventListener('focusout', handleListsContainerFocusOut);
+            listsContainer.addEventListener('keydown', handleListsContainerKeydown);
+        };
+
+        // --- Event Handlers ---
+
+        /**
+         * Handles click events within the main lists container.
+         * Uses `event.target.closest()` to identify the clicked element and its parent context.
+         * @param {Event} event - The click event.
+         */
+        const handleListsContainerClick = (event) => {
+            const target = event.target;
+
+            // Handle "Add Task" button click
+            if (target.classList.contains('add-task-btn')) {
+                const listElement = target.closest('.todo-list');
+                const listId = listElement.dataset.listId;
+                const taskInput = listElement.querySelector('.new-task-input');
+                const dateInput = listElement.querySelector('.new-task-date');
+                const timeInput = listElement.querySelector('.new-task-time');
+
+                addTask(listId, taskInput.value, dateInput.value, timeInput.value);
+                // Clear input fields after adding
+                taskInput.value = '';
+                dateInput.value = '';
+                timeInput.value = '';
+            }
+
+            // Handle "Delete Task" button click
+            if (target.closest('.delete-task-btn')) {
+                const taskElement = target.closest('.task-item');
+                const listElement = target.closest('.todo-list');
+                deleteTask(listElement.dataset.listId, taskElement.dataset.taskId);
+            }
+
+            // Handle "Edit Task" / "Save Task" button click
+            if (target.closest('.edit-task-btn') || target.closest('.save-task-btn')) {
+                const button = target.closest('.edit-task-btn') || target.closest('.save-task-btn');
+                const taskElement = button.closest('.task-item');
+                const listElement = button.closest('.todo-list');
+                const listId = listElement.dataset.listId;
+                const taskId = taskElement.dataset.taskId;
+
+                if (!taskElement.classList.contains('editing')) {
+                    // Enter editing mode
+                    taskElement.classList.add('editing');
+                    const taskTextSpan = taskElement.querySelector('.task-text');
+                    const taskDateTimeDiv = taskElement.querySelector('.task-date-time');
+                    const editTextInput = taskElement.querySelector('.edit-task-input');
+                    const editDateInput = taskElement.querySelector('.edit-task-date');
+                    const editTimeInput = taskElement.querySelector('.edit-task-time');
+
+                    // Show editing inputs and hide static displays
+                    taskTextSpan.style.display = 'none';
+                    if (taskDateTimeDiv) taskDateTimeDiv.style.display = 'none'; // Only if date/time exists
+                    
+                    editTextInput.style.display = 'block';
+                    editDateInput.style.display = 'block';
+                    editTimeInput.style.display = 'block';
+
+                    // Pre-fill inputs with current task data
+                    editTextInput.value = taskTextSpan.textContent;
+                    const task = findTask(listId, taskId);
+                    if (task) {
+                        editDateInput.value = task.dueDate;
+                        editTimeInput.value = task.dueTime;
+                    }
+                    editTextInput.focus(); // Focus on the text input for immediate editing
+
+                    // Change button icon/class to 'Save'
+                    button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>`;
+                    button.classList.remove('edit-task-btn');
+                    button.classList.add('save-task-btn');
+                    button.setAttribute('aria-label', 'Save task changes');
+                } else {
+                    // Save changes (already in editing mode)
+                    const editTextInput = taskElement.querySelector('.edit-task-input');
+                    const editDateInput = taskElement.querySelector('.edit-task-date');
+                    const editTimeInput = taskElement.querySelector('.edit-task-time');
+                    editTask(listId, taskId, editTextInput.value, editDateInput.value, editTimeInput.value);
+                }
+            }
+
+            // Handle "Delete List" button click
+            if (target.closest('.delete-list-btn')) {
+                const listElement = target.closest('.todo-list');
+                deleteList(listElement.dataset.listId);
+            }
+
+            // Handle "Edit List Name" / "Save List Name" button click
+            if (target.closest('.edit-list-name-btn') || target.closest('.save-list-name-btn')) {
+                const button = target.closest('.edit-list-name-btn') || target.closest('.save-list-name-btn');
+                const listElement = button.closest('.todo-list');
+                const listId = listElement.dataset.listId;
+                const listNameH2 = listElement.querySelector('h2');
+
+                if (listNameH2.contentEditable === 'false' || listNameH2.contentEditable === 'inherit') {
+                    // Enter editing mode
+                    listNameH2.contentEditable = 'true';
+                    listNameH2.focus();
+                    listNameH2.classList.add('editing');
+                    document.execCommand('selectAll', false, null); // Select all text for easy replacement
+
+                    // Change button icon/class to 'Save'
+                    button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>`;
+                    button.classList.remove('edit-list-name-btn');
+                    button.classList.add('save-list-name-btn');
+                    button.setAttribute('aria-label', 'Save list name changes');
+
+                } else {
+                    // Save changes (already in editing mode)
+                    listNameH2.contentEditable = 'false';
+                    listNameH2.classList.remove('editing');
+                    editListName(listId, listNameH2.textContent);
+                    // Reset button icon/class to 'Edit'
+                    button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>`;
+                    button.classList.remove('save-list-name-btn');
+                    button.classList.add('edit-list-name-btn');
+                    button.setAttribute('aria-label', 'Edit list name');
+                }
+            }
+        };
+
+        /**
+         * Handles change events (e.g., checkbox toggles) within the main lists container.
+         * @param {Event} event - The change event.
+         */
+        const handleListsContainerChange = (event) => {
+            const target = event.target;
+
+            // Handle task completion checkbox
+            if (target.type === 'checkbox' && target.closest('.task-item')) {
+                const taskElement = target.closest('.task-item');
+                const listElement = target.closest('.todo-list');
+                toggleTaskCompletion(listElement.dataset.listId, taskElement.dataset.taskId);
+            }
+        };
+
+        /**
+         * Handles `focusout` events (when an element loses focus) for contenteditable list names
+         * and task editing inputs.
+         * @param {Event} event - The focusout event.
+         */
+        const handleListsContainerFocusOut = (event) => {
+            const target = event.target;
+
+            // Handle `focusout` for contenteditable list name (H2 tag)
+            if (target.tagName === 'H2' && target.closest('.todo-list') && target.contentEditable === 'true') {
+                const listId = target.dataset.listId;
+                
+                // Only save if the focus moved outside the H2 itself, not just blurred
+                // (e.g., user clicked on another element outside this H2)
+                const newFocusedElement = event.relatedTarget;
+                const listElement = target.closest('.todo-list');
+                if (!listElement.contains(newFocusedElement)) {
+                    target.contentEditable = 'false';
+                    target.classList.remove('editing');
+                    editListName(listId, target.textContent);
+
+                    // Reset the edit button visually
+                    const button = listElement.querySelector('.save-list-name-btn');
+                    if (button) {
+                        button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>`;
+                        button.classList.remove('save-list-name-btn');
+                        button.classList.add('edit-list-name-btn');
+                        button.setAttribute('aria-label', 'Edit list name');
+                    }
+                }
+            }
+            
+            // Handle `focusout` for task editing inputs
+            if (target.classList.contains('edit-task-input') || target.classList.contains('edit-task-date') || target.classList.contains('edit-task-time')) {
+                const taskElement = target.closest('.task-item');
+                if (taskElement && taskElement.classList.contains('editing')) {
+                    const newFocusedElement = event.relatedTarget;
+                    // If focus moves completely outside the task item, save changes
+                    if (!taskElement.contains(newFocusedElement)) {
+                        const listElement = target.closest('.todo-list');
+                        const listId = listElement.dataset.listId;
+                        const taskId = taskElement.dataset.taskId;
+                        const editTextInput = taskElement.querySelector('.edit-task-input');
+                        const editDateInput = taskElement.querySelector('.edit-task-date');
+                        const editTimeInput = taskElement.querySelector('.edit-task-time');
+                        editTask(listId, taskId, editTextInput.value, editDateInput.value, editTimeInput.value);
+                    }
+                }
+            }
+        };
+
+        /**
+         * Handles `keydown` events within the lists container, primarily for 'Enter' key presses.
+         * @param {Event} event - The keydown event.
+         */
+        const handleListsContainerKeydown = (event) => {
+            const target = event.target;
+
+            // Save contenteditable list name on 'Enter' key press
+            if (target.tagName === 'H2' && target.contentEditable === 'true' && event.key === 'Enter') {
+                event.preventDefault(); // Prevent new line in contenteditable
+                target.blur(); // Trigger focusout, which will handle saving and UI reset
+            }
+
+            // Save task edits on 'Enter' key press while editing a task input
+            if (target.closest('.task-item.editing') && (target.classList.contains('edit-task-input') || target.classList.contains('edit-task-date') || target.classList.contains('edit-task-time')) && event.key === 'Enter') {
+                event.preventDefault(); // Prevent default form submission or new line
+                // Find the associated save button and simulate a click
+                const taskElement = target.closest('.task-item');
+                const saveButton = taskElement.querySelector('.save-task-btn');
+                if (saveButton) {
+                    saveButton.click(); // This will trigger the save task logic
+                }
+            }
+        };
+
+        /**
+         * Handles the click event for the main "Add New List" button.
+         */
+        const handleAddList = () => {
+            addList(newListInput.value);
+        };
+
+        /**
+         * Handles the `keydown` event for the main new list input field, specifically for 'Enter' key.
+         * @param {Event} event - The keydown event.
+         */
+        const handleNewListInputKeydown = (event) => {
+            if (event.key === 'Enter') {
+                handleAddList(); // Trigger add list on Enter
+            }
+        };
+
+        // --- Initialization ---
+
+        // Load data and render lists when the DOM is fully loaded
+        document.addEventListener('DOMContentLoaded', loadTodoData);
+
+    </script>
+</body>
+</html>
